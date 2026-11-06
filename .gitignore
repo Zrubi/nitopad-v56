@@ -1,0 +1,18 @@
+# secrets
+.env
+.env.*
+secrets.yaml
+*.secret
+*.key
+!*.key.example
+!*.env.example
+
+# editor / OS
+.vscode/
+.idea/
+.DS_Store
+
+# logs, build artifacts
+*.log
+logs/
+dist/
