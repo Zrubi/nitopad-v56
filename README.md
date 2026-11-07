@@ -11,7 +11,10 @@ Notes and configuration for the Nitropad V56 laptop (Meteor Lake iGPU) running Q
 
 Read `docs/i915-sriov-build-notes.md` from the top. It lists the steps in order, and marks which commands run in the dev VM and which in dom0.
 
-## Related repos
+## Related links
 
-- `IaC/design`: design rules for the IaC repos.
-- `IaC/inventory`: entry point and device index for the LAN.
+- Upstream bug reports (Dasharo):
+  - https://github.com/Dasharo/dasharo-issues/issues/1617#issuecomment-6676778443
+  - https://github.com/Dasharo/dasharo-issues/issues/1954
+- Nitrokey support post: https://support.nitrokey.com/t/nitropad-v56-phantom-second-edp-in-the-vbt-gpu-hang-after-s3-resume/7809
+- Qubes OS HCL report (Nitropad V56): https://forum.qubes-os.org/t/nitropad-v56-dasharo-heads-with-measured-boot/43877/2
