@@ -16,5 +16,5 @@ Read `docs/i915-sriov-build-notes.md` from the top. It lists the steps in order,
 - Upstream bug reports (Dasharo):
   - https://github.com/Dasharo/dasharo-issues/issues/1617#issuecomment-6676778443
   - https://github.com/Dasharo/dasharo-issues/issues/1954
-- Nitrokey support post: https://support.nitrokey.com/t/nitropad-v56-phantom-second-edp-in-the-vbt-gpu-hang-after-s3-resume/7809
-- Qubes OS HCL report (Nitropad V56): https://forum.qubes-os.org/t/nitropad-v56-dasharo-heads-with-measured-boot/43877/2
+- [Nitrokey support post](https://support.nitrokey.com/t/nitropad-v56-phantom-second-edp-in-the-vbt-gpu-hang-after-s3-resume/7809)
+- [Qubes OS HCL report](https://forum.qubes-os.org/t/nitropad-v56-dasharo-heads-with-measured-boot/43877)
