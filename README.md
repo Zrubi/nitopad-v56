@@ -5,6 +5,7 @@ Notes and configuration for the Nitropad V56 laptop (Meteor Lake iGPU) running Q
 ## Contents
 
 - `docs/i915-sriov-build-notes.md`: building and installing the out-of-tree i915 SR-IOV driver (`i915-sriov-dkms`) for dom0, with backup and revert steps.
+- `scripts/sriov-vf-up.sh`: creates the SR-IOV VFs and binds them to `pciback` (run in dom0 after each boot).
 
 ## Quickstart
 
