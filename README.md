@@ -1,4 +1,4 @@
-# nitropad-v56
+# NitroPad v56
 
 Notes and configuration for the Nitropad V56 laptop (Meteor Lake iGPU) running Qubes OS.
 
