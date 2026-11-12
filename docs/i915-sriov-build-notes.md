@@ -1,5 +1,7 @@
 # i915 SR-IOV on Qubes OS: build notes
 
+Findings and measurements are kept separately: [i915-sriov-findings.md](i915-sriov-findings.md) (driver, VFs, display scaling, rendering) and [webgl-firefox-findings.md](webgl-firefox-findings.md) (browser WebGL).
+
 Goal: enable SR-IOV virtual GPUs (VFs) on a Meteor Lake iGPU (`8086:7d55`) in Qubes OS 4.3, and give Linux AppVMs access to them for rendering and video.
 
 All steps apply to Qubes OS with a Xen-based dom0. Qubes terms are used throughout: dom0, qube, AppVM, template, VM kernel.

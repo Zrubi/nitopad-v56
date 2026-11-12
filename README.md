@@ -5,8 +5,14 @@ Notes and configuration for the Nitropad V56 laptop (Meteor Lake iGPU) running Q
 ## Contents
 
 - [`docs/i915-sriov-build-notes.md`](docs/i915-sriov-build-notes.md): building and installing the out-of-tree i915 SR-IOV driver (`i915-sriov-dkms`) for dom0, with backup and revert steps.
+- [`docs/i915-sriov-findings.md`](docs/i915-sriov-findings.md): measured results, limits, and open items for the SR-IOV setup.
+- [`docs/webgl-firefox-findings.md`](docs/webgl-firefox-findings.md): investigation of slow WebGL in Firefox on the vGPU AppVM.
 - [`scripts/sriov-vf-up.sh`](scripts/sriov-vf-up.sh): creates the SR-IOV VFs and binds them to `pciback` (run in dom0 after each boot).
 
+
+## Quickstart
+
+Read [`docs/i915-sriov-build-notes.md`](docs/i915-sriov-build-notes.md) from the top. It lists the steps in order, and marks which commands run in the dev VM and which in dom0.
 
 ## Related links
 
