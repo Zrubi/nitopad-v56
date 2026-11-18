@@ -85,6 +85,8 @@ Verified on the Meteor Lake machine, dom0 `7.2.11-1.qubes.fc41.x86_64`.
 
 7. **Create the VFs** with `scripts/sriov-vf-up.sh` (in this repo): `sudo scripts/sriov-vf-up.sh <count>`. It resets `sriov_numvfs`, unbinds each VF from `i915`, and binds it to `pciback` with `new_slot` and `bind`. It must run after every boot until it is a systemd unit.
 
+   After this, `scripts/gpu-vf-status.py` shows which VFs are free, and `scripts/gpu-dispvm.py` starts an app on a free VF. See [`gpu-dispvm-findings.md`](gpu-dispvm-findings.md).
+
    Create only as many VFs as you need. Each VF's share of the GPU address space (GGTT), contexts, and doorbells is set when the VFs are created, by dividing the available amount by the number of VFs (`pf_auto_provision_ggtt()` and related functions in `gt/iov/intel_iov_provisioning.c`). Idle VFs use no RAM, but they do reduce the share the active VF gets. For this setup, one VF is enough. A test comparing 1 and 3 VFs is pending; update this note if it shows a difference.
 
 8. **Configure the test AppVM** (dom0 only; the template is unchanged):

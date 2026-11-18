@@ -97,7 +97,7 @@ Open questions for that design: pool size, the VM list, memory per VM, and wheth
 2. `ggtt_spare` test: does raising the PF spare to about 128 MiB before creating 2 VFs keep enough contiguous room for the scaled framebuffer? Not started.
 3. Verify the `qvm-device` attach and detach syntax for this Qubes version.
 4. Confirm whether `intel_iommu=on` belongs in the dom0 kernel line or in `GRUB_CMDLINE_XEN_DEFAULT`.
-5. Make `sriov-vf-up.sh` a systemd unit once the pool design is settled.
+5. Make `sriov-vf-up.sh` a systemd unit once the pool design is settled. The pool design and the launcher are in [`gpu-dispvm-findings.md`](gpu-dispvm-findings.md).
 
 ## Limits to live with
 
