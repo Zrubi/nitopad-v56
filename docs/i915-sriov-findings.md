@@ -17,7 +17,7 @@ Status as of 2026-11-12. Setup steps are in [i915-sriov-build-notes.md](i915-sri
 - VM kernel `7.2.11-1.SRIOV`, built with `qubes-prepare-vm-kernel --include-devel`. Modules come from its `modules.img`.
 - Test AppVM: HVM, 8 GB static memory (no swap seen), `software-rendering` service off in dom0.
 - The guest sees the VF as `00:07.0`, bound to `i915` in SR-IOV VF mode.
-- Guest kernel options: `module_blacklist=xe`. `i915.enable_guc` is not needed in the guest (tested).
+- Guest kernel options: `module_blacklist=xe`. It stops the guest from trying the `xe` driver, which otherwise logs a false or unimportant error. `i915.enable_guc` is not needed in the guest (tested).
 - Guest GuC and HuC are `PRELOADED` from the host side. The VF does not load the Fedora firmware files, so the template does not need `intel-gpu-firmware`.
 - The VF's display is disabled, as expected. Output stays on the PF in dom0.
 - Rejected: `rd.qubes.hide_pci` with VF BDFs. The VFs don't exist at boot, and the attempt broke the boot. Hiding by vendor:device ID would also catch the PF (`8086:7d55`).
@@ -97,7 +97,7 @@ Open questions for that design: pool size, the VM list, memory per VM, and wheth
 2. `ggtt_spare` test: does raising the PF spare to about 128 MiB before creating 2 VFs keep enough contiguous room for the scaled framebuffer? Not started.
 3. Verify the `qvm-device` attach and detach syntax for this Qubes version.
 4. Confirm whether `intel_iommu=on` belongs in the dom0 kernel line or in `GRUB_CMDLINE_XEN_DEFAULT`.
-5. Make `sriov-vf-up.sh` a systemd unit once the pool design is settled.
+5. Make `sriov-vf-up.sh` a systemd unit once the pool design is settled. The pool design and the launcher are in [`gpu-dispvm-findings.md`](gpu-dispvm-findings.md).
 
 ## Limits to live with
 
