@@ -1,8 +1,12 @@
 #!/usr/bin/python3
-"""Read-only report of the SR-IOV VFs of the Meteor Lake iGPU.
+#
+# Copyright (C) 2026  Laszlo Zrubecz <mail@zrubi.hu>
+#
+"""Report each SR-IOV VF of the iGPU as free or in use. Read-only.
 
-A VF is free only if no qube has a persistent assignment or a live attachment
-for it. Makes no changes. Run as root in dom0.
+Usage: gpu-vf-status.py
+
+Run in dom0, as the normal user.
 """
 
 import glob

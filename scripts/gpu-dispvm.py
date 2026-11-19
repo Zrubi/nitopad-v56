@@ -1,19 +1,12 @@
 #!/usr/bin/python3
-"""Start a GPU disposable from dom0 and run one app in it.
+#
+# Copyright (C) 2026  Laszlo Zrubecz <mail@zrubi.hu>
+#
+"""Start one app in a new GPU disposable on a free SR-IOV VF.
 
-Usage: gpu-dispvm.py [-v] [-q] <template> <app>
+Usage: gpu-dispvm.py [-v] [-q] <disposable-template> <app-id>
 
-Creates a disposable from <template>, assigns one free VF of the iGPU to it,
-starts it, and runs qubes.StartApp+<app>. Waits for the app's service to end,
-then returns its exit code, and kills the disposable if it is still running.
-If the disposable cannot be assigned or started, it is removed, which returns
-its VF to the pool.
-
-Silent by default, like qvm-run: -v prints progress, -q reduces messages.
-Errors are always printed to stderr.
-
-Not set yet: the GPU settings (HVM, kernel, kernel options). They must be copied
-from the working vGPU-test configuration before this is used for real.
+-v prints progress, -q reduces messages. Errors are always printed.
 """
 
 import argparse
@@ -144,7 +137,8 @@ def main(argv):
     if template not in app.domains:
         error(f"No such qube: {template}")
         return 1
-    preload = int(app.domains[template].features.get("preload-dispvm-max", 0) or 0)
+    features = app.domains[template].features
+    preload = int(features.get("preload-dispvm-max", 0) or 0)
     if preload > 0:
         error(f"{template} preloads disposables. Refusing.")
         return 1
