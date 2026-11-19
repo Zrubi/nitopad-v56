@@ -83,7 +83,7 @@ Verified on the Meteor Lake machine, dom0 `7.2.11-1.qubes.fc41.x86_64`.
    ```
    `--include-devel` needs step 3. Drop the flag if you skip step 3. Check that `/var/lib/qubes/vm-kernels/7.2.11-1.SRIOV/` contains `vmlinuz`, `initramfs`, and `modules.img`, and that `modules.img` contains `extra/i915.ko`.
 
-7. **Create the VFs** with `scripts/sriov-vf-up.sh` (in this repo): `sudo scripts/sriov-vf-up.sh <count>`. It resets `sriov_numvfs`, unbinds each VF from `i915`, and binds it to `pciback` with `new_slot` and `bind`. It must run after every boot until it is a systemd unit.
+7. **Create the VFs** with `scripts/i915-vf.sh` (in this repo): `sudo scripts/i915-vf.sh <count>`. It resets `sriov_numvfs`, unbinds each VF from `i915`, and binds it to `pciback` with `new_slot` and `bind`. It must run after every boot until it is a systemd unit.
 
    After this, `scripts/gpu-vf-status.py` shows which VFs are free, and `scripts/gpu-dispvm.py` starts an app on a free VF. See [`gpu-dispvm-findings.md`](gpu-dispvm-findings.md).
 
@@ -141,7 +141,7 @@ Run in the guest, with nothing else open in the qube.
 ## Open items
 
 - **Xen options:** confirm whether `intel_iommu=on` is needed under Xen. The Xen-level IOMMU option is `iommu=` in `GRUB_CMDLINE_XEN_DEFAULT`. The current dom0 line keeps the option as it was tested.
-- **VF persistence:** `sriov-vf-up.sh` must run after every boot until it becomes a systemd unit.
+- **VF persistence:** `i915-vf.sh` must run after every boot until it becomes a systemd unit.
 - **Each dom0 kernel update** needs the module rebuilt into `extra/` and the VM kernel package rebuilt under a new name. The module is tied to one kernel version.
 - **`qvm-device` attach syntax** for this Qubes version: confirm and record the exact command.
 - **Hardware H.264 decode** is blocklisted in Firefox's report. Not investigated.
