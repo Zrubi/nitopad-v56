@@ -17,7 +17,7 @@ Status as of 2026-11-12. Setup steps are in [i915-sriov-build-notes.md](i915-sri
 - VM kernel `7.2.11-1.SRIOV`, built with `qubes-prepare-vm-kernel --include-devel`. Modules come from its `modules.img`.
 - Test AppVM: HVM, 8 GB static memory (no swap seen), `software-rendering` service off in dom0.
 - The guest sees the VF as `00:07.0`, bound to `i915` in SR-IOV VF mode.
-- Guest kernel options: `module_blacklist=xe`. `i915.enable_guc` is not needed in the guest (tested).
+- Guest kernel options: `module_blacklist=xe`. It stops the guest from trying the `xe` driver, which otherwise logs a false or unimportant error. `i915.enable_guc` is not needed in the guest (tested).
 - Guest GuC and HuC are `PRELOADED` from the host side. The VF does not load the Fedora firmware files, so the template does not need `intel-gpu-firmware`.
 - The VF's display is disabled, as expected. Output stays on the PF in dom0.
 - Rejected: `rd.qubes.hide_pci` with VF BDFs. The VFs don't exist at boot, and the attempt broke the boot. Hiding by vendor:device ID would also catch the PF (`8086:7d55`).

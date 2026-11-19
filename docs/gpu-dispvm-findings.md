@@ -1,40 +1,70 @@
-# GPU disposables on Qubes OS 4.3: findings and usage
+# GPU disposables on Qubes OS 4.3
 
-Status: working on this system. A GPU disposable is created from a disposable
-template, given a free SR-IOV virtual function (VF) of the iGPU, and runs an app,
-started from the dom0 CLI.
+This is a proof of concept: disposables that each get one virtual function (VF) of an
+SR-IOV capable GPU, and run one app with GPU access. It was tested on one system
+(Meteor Lake-P iGPU, Qubes OS 4.3 dom0, out-of-tree `i915-sriov-dkms`). It is not a
+Qubes OS change. The scripts are local tools that run in dom0.
 
-## Current status
+## Components
 
-- Status tool: `scripts/gpu-vf-status.py` (read-only). Working.
-- VF-up tool: `scripts/sriov-vf-up.sh`. Working. Its order is tested and must not
-  change without a new test.
-- Launcher: `scripts/gpu-dispvm.py`. Working. Silent by default, `-v` for progress.
-  It returns the app's exit code, and removes or kills the disposable when done.
-- GPU settings: set once on the GPU disposable template. Disposables inherit them,
-  including `kernelopts` and features such as `software-rendering off`.
-- Apps tested: `org.gnome.Ptyxis` and `org.mozilla.firefox`, each on its own VF.
-- Not done: desktop menu entries (see "Later").
+| Script | Purpose |
+|--------|---------|
+| [`scripts/sriov-vf-up.sh`](../scripts/sriov-vf-up.sh) | Creates the VFs and binds them to `pciback`. Run as root in dom0. |
+| [`scripts/gpu-vf-status.py`](../scripts/gpu-vf-status.py) | Read-only report of each VF as free or in use. |
+| [`scripts/gpu-dispvm.py`](../scripts/gpu-dispvm.py) | Starts one app in a new disposable on a free VF. |
 
-## Deployment (dom0)
+## Setup
 
-Copy the two Python scripts to dom0 (for example `~/bin/`) and make them executable.
-`sriov-vf-up.sh` runs as root, after every boot, until it is a systemd unit.
+1. **Create the VFs.** Follow [`i915-sriov-build-notes.md`](i915-sriov-build-notes.md),
+   then run `sudo scripts/sriov-vf-up.sh <count>` in dom0. The script must be run
+   manually after every boot.
+
+2. **Configure the disposable template** `vGPU-dvm` in dom0:
+
+   ```
+   qvm-prefs vGPU-dvm template_for_dispvms True
+   qvm-prefs vGPU-dvm virt_mode hvm
+   qvm-prefs vGPU-dvm kernel 7.2.11-1.SRIOV
+   qvm-prefs vGPU-dvm kernelopts "module_blacklist=xe"
+   qvm-prefs vGPU-dvm netvm ''
+   qvm-prefs vGPU-dvm maxmem 0
+   qvm-features vGPU-dvm preload-dispvm-max ''
+   qvm-service vGPU-dvm software-rendering off
+   ```
+
+   - `kernelopts` is explained in [`i915-sriov-findings.md`](i915-sriov-findings.md).
+   - `template_for_dispvms` is described in the official
+     [disposable customisation](https://doc.qubes-os.org/en/r4.3/user/advanced-topics/disposable-customization.html)
+     page.
+   - `preload-dispvm-max` is the "Preload disposables" setting. It is described in
+     [How to use disposables](https://doc.qubes-os.org/en/r4.3/user/how-to-guides/how-to-use-disposables.html#faster-disposable-startup-preloading).
+     The launcher refuses to run if it is above 0.
+   - `maxmem 0` is the "Include in memory balancing" setting, which is off. The same
+     setting is used for PCI-attached qubes in
+     [How to use PCI devices](https://doc.qubes-os.org/en/r4.3/user/how-to-guides/how-to-use-pci-devices.html).
+   - `qvm-service` is the only way to set `software-rendering`. It is stored as a
+     feature.
+
+3. **Customise the disposable template** when needed. Starting `vGPU-dvm` to change its
+   settings or applications is described in
+   [Disposable customization](https://doc.qubes-os.org/en/r4.3/user/advanced-topics/disposable-customization.html#change-application-settings-manually).
+
+4. **Copy the Python scripts to dom0**, for example to `~/bin/`, and make them
+   executable.
 
 ## Usage
 
 ```
-bin/gpu-dispvm.py [-v] [-q] <gpu-template> <app-id>
-bin/gpu-vf-status.py
+gpu-vf-status.py
+gpu-dispvm.py [-v] [-q] vGPU-dvm <app-id>
 ```
 
-- `<gpu-template>`: the GPU disposable template you prepared (not `default-dvm`).
-- `<app-id>`: the desktop id, for example `org.gnome.Ptyxis` or `org.mozilla.firefox`.
+- `<app-id>` is the desktop id, for example `org.gnome.Ptyxis` or `org.mozilla.firefox`.
   Short names such as `ptyxis` are not accepted.
-- Run the launcher as the normal user, without `sudo` and without `&`.
-- It needs `XDG_RUNTIME_DIR`, which is set in a normal login session.
+- `-v` prints progress. `-q` reduces messages. The default is silent, as in `qvm-run`.
+- The launcher returns the exit code of the app's service.
 
-Find the id for an app with:
+To find the id of an app:
 
 ```
 grep -rh "StartApp+" ~/.local/share/applications/ /usr/share/applications/ | grep -i <name>
@@ -42,73 +72,60 @@ grep -rh "StartApp+" ~/.local/share/applications/ /usr/share/applications/ | gre
 
 ## Design
 
-- **Goal:** start a GPU-enabled disposable from the dom0 CLI, running a chosen app.
-  Each GPU disposable gets one VF of the Meteor Lake iGPU (`00:02.x`).
-- **No Qubes core change and no `qvm-run` change.** The launcher uses the public
-  `qubesadmin` API, split into steps: create, assign the VF, start, run the app. These
-  are the same calls `qvm-run --dispvm` makes (`qubesadmin/tools/qvm_run.py`,
-  `qubesadmin/vm/__init__.py`).
-- **VF selection:** a VF is free only if no qube has a persistent assignment or a live
-  attachment for it. VFs assigned to any qube, running or halted, are never used. This
-  protects static GPU qubes.
-- **Lock:** `$XDG_RUNTIME_DIR/gpu-dispvm.lock`, held from the free-VF check until the
-  VF is assigned.
-- **Pool size** is dynamic: the number of free VFs at launch time. The VF-up tool sets
-  how many VFs exist, up to `sriov_totalvfs` (7 on this system).
-- **VF count** can only change as N → 0 → M, and only when no VF is in use. The VF-up
-  tool follows this.
-- **Static assignments** are by exact PCI ID. A qube with one starts only if that VF is
-  present and free.
+- **Launch:** the launcher uses the public `qubesadmin` API in separate steps: create
+  the disposable, assign the VF, start the qube, run the app. These are the same calls
+  that `qvm-run --dispvm` makes. Neither `qvm-run` nor Qubes core is changed.
+- **Free VF:** a VF is free only if no qube has a persistent assignment and no qube has
+  it attached. A VF held by any qube, running or halted, is never used. A static qube
+  that owns a VF is therefore protected.
+- **Lock:** `$XDG_RUNTIME_DIR/gpu-dispvm.lock`, held from the free-VF check until the VF
+  is assigned.
+- **Pool size:** the number of free VFs at launch time. The VF count is set by
+  `sriov-vf-up.sh`, up to `sriov_totalvfs` (7 on the tested system).
+- **VF count changes:** only N → 0 → M, and only while no VF is in use. The VF-up script
+  follows this order.
+- **Static assignments:** they name an exact PCI ID. A qube with one starts only while
+  that VF exists and is free.
 - **Cleanup:** the disposable is removed when its app closes (`auto_cleanup`). The
-  launcher also kills it if it is still running after its service ends, as
-  `DispVMWrapper.cleanup()` does. If assignment or start fails, the launcher removes
-  the disposable, which returns the VF.
-- **Output:** silent by default, as in `qvm-run`. Verbosity is `-v` count minus `-q`
-  count. The terminal check in `qvm-run` only controls escape-character filtering, so
-  the launcher doesn't use it.
-- **Preloading** must be off on the GPU disposable template. The launcher refuses
-  otherwise.
+  launcher also kills it if it is still running after its service ends. If assignment or
+  start fails, the launcher removes the disposable, which returns the VF.
 
-## Verified facts
+## Behaviour the launcher relies on
 
-- `qvm-pci` without arguments shows only live attachments. Use `qvm-pci ls -s
-  --with-sbdf` to include persistent assignments.
-- Each device appears as a row for its persistent assignment (`*<qube> (required)`)
-  and a row for its live attachment (`<qube> (attached)`). Match rows on
-  `BACKEND:DEVID` (for example `dom0:00_02.1`), not on SBDF.
-- A VF has a `physfn` link in sysfs; the PF has none.
+- Device state comes from the `qubesadmin` API. `get_assigned_devices()` gives the
+  persistent assignments, and `get_attached_devices()` gives the live attachments
+  (`qubesadmin/tools/qvm_device.py`).
+- A VF has a `physfn` link in sysfs. A physical function does not.
 - `DispVMWrapper.run_service` applies a longer connection timeout only before the
-  disposable is created, so the launcher passes `connect_timeout=disp.qrexec_timeout`
-  itself.
-- Disposable settings: cloneable properties and features (except `preload-dispvm*`)
-  are copied from the disposable template (`qubes/vm/dispvm.py`, lines 378–405).
-- `qubes.StartApp+<id>` requires the desktop-file id. A short name returns
-  `<name> not found in <dirs>` with exit code 1. That message is hidden unless `-p`
-  (`--pass-io`) is used.
-- Ids depend on the template. On the tested GPU template, Firefox is
-  `org.mozilla.firefox`, and Ptyxis is `org.gnome.Ptyxis`. The short names `firefox`
-  and `ptyxis` are not ids there.
-- The `core-agent-linux` source is checked out at tag `v4.3.48`. The tag verifies with
-  the builder's own method: a separate keyring, the Qubes developer keys, and the Qubes
-  Master Signing Key trusted, then `git verify-tag`.
+  disposable exists (`qubesadmin/vm/__init__.py`). The launcher passes
+  `connect_timeout=disp.qrexec_timeout` itself.
+- Disposables copy the template's cloneable properties and features, except
+  `preload-dispvm*` (`qubes/vm/dispvm.py`, `DispVM.__init__`). This is how `kernel`,
+  `kernelopts`, `virt_mode`, `maxmem`, and `service.software-rendering` reach the
+  disposable.
+- `from_appvm` requires `template_for_dispvms` to be set (`qubes/vm/dispvm.py`).
+- `qvm-service` stores a service flag as the feature `service.<name>`
+  (`qubesadmin/tools/qvm_service.py`).
+- `qubes.StartApp+<id>` takes the desktop-file id. A short name fails with
+  `<name> not found in <dirs>` and exit code 1. That message is shown with `qvm-run -p`.
 
-## Upstream documentation note
+## Upstream example
 
-- The "How to use disposables" page gives
-  `qvm-run --dispvm=default-dvm --service -- qubes.StartApp+firefox` as the CLI example.
-  On the tested template, `firefox` is not an id, and the working id is
-  `org.mozilla.firefox`. Whether the example is wrong in general depends on the template
-  packaging, which has not been checked on a second template.
+The official
+[How to use disposables](https://doc.qubes-os.org/en/r4.3/user/how-to-guides/how-to-use-disposables.html#open-an-application-in-a-disposable-from-gui-domain)
+page gives `qvm-run --dispvm=default-dvm --service -- qubes.StartApp+firefox` as the
+command-line example. On the tested template, `firefox` is not an id. The id is
+`org.mozilla.firefox`. This may depend on the template's packaging. It has not been
+checked on a second template.
 
-## Later
+## Limitations
 
-- **Desktop integration:** the menu runs a desktop entry's `Exec` verbatim, so the GPU
-  path needs its own entries. The options are generated `.desktop` files that call the
-  launcher, or a generic upstream hook. Menu entries are regenerated after template
-  package changes and on manual refresh, so patched entries must be re-applied.
-- **Security:** the launcher runs as root in dom0 (trusted computing base). Keep it
-  small, and never touch a VF assigned to any qube. GPU disposables share userland with
-  normal disposables, so use them for GPU tasks only. The out-of-tree `i915-sriov-dkms`
-  module is an existing risk.
-- **Hardware specifics:** the launcher and status tool use the PF address `0000:00:02.0`
-  and the port format `dom0:00_02.x`. These are specific to this machine.
+- **Desktop menu entries** are not covered. The dom0 menu runs each entry's `Exec` line
+  verbatim. Those entries are generated from the disposable template's applications and
+  rewritten after package changes in the template and on manual refresh, so any change
+  to them has to be re-applied.
+- **Hardware specifics:** the scripts use the PF address `0000:00:02.0` and the port
+  format `dom0:00_02.x`. They are specific to this machine.
+- **Leftovers:** a disposable left behind by a crash is removed by hand, using `qvm-ls`
+  to find it and `qvm-remove` to delete it.
+- **Boot:** `sriov-vf-up.sh` must be run manually after each boot.
