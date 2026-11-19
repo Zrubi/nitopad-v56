@@ -1,6 +1,6 @@
 #!/bin/bash
 # Create SR-IOV VFs on the Meteor Lake iGPU and hand them to xen-pciback.
-# Usage: sudo ./sriov-vf-up.sh [0-7]   (0 removes all VFs, default 3)
+# Usage: sudo ./i915-vf.sh [0-7]   (0 removes all VFs, default 3)
 set -euo pipefail
 
 PF=0000:00:02.0

@@ -9,14 +9,14 @@ Qubes OS change. The scripts are local tools that run in dom0.
 
 | Script | Purpose |
 |--------|---------|
-| [`scripts/sriov-vf-up.sh`](../scripts/sriov-vf-up.sh) | Creates the VFs and binds them to `pciback`. Run as root in dom0. |
+| [`scripts/i915-vf.sh`](../scripts/i915-vf.sh) | Creates the VFs and binds them to `pciback`. Run as root in dom0. |
 | [`scripts/gpu-vf-status.py`](../scripts/gpu-vf-status.py) | Read-only report of each VF as free or in use. |
 | [`scripts/gpu-dispvm.py`](../scripts/gpu-dispvm.py) | Starts one app in a new disposable on a free VF. |
 
 ## Setup
 
 1. **Create the VFs.** Follow [`i915-sriov-build-notes.md`](i915-sriov-build-notes.md),
-   then run `sudo scripts/sriov-vf-up.sh <count>` in dom0. The script must be run
+   then run `sudo scripts/i915-vf.sh <count>` in dom0. The script must be run
    manually after every boot.
 
 2. **Configure the disposable template** `vGPU-dvm` in dom0:
@@ -81,7 +81,7 @@ grep -rh "StartApp+" ~/.local/share/applications/ /usr/share/applications/ | gre
 - **Lock:** `$XDG_RUNTIME_DIR/gpu-dispvm.lock`, held from the free-VF check until the VF
   is assigned.
 - **Pool size:** the number of free VFs at launch time. The VF count is set by
-  `sriov-vf-up.sh`, up to `sriov_totalvfs` (7 on the tested system).
+  `i915-vf.sh`, up to `sriov_totalvfs` (7 on the tested system).
 - **VF count changes:** only N → 0 → M, and only while no VF is in use. The VF-up script
   follows this order.
 - **Static assignments:** they name an exact PCI ID. A qube with one starts only while
@@ -128,4 +128,4 @@ checked on a second template.
   format `dom0:00_02.x`. They are specific to this machine.
 - **Leftovers:** a disposable left behind by a crash is removed by hand, using `qvm-ls`
   to find it and `qvm-remove` to delete it.
-- **Boot:** `sriov-vf-up.sh` must be run manually after each boot.
+- **Boot:** `i915-vf.sh` must be run manually after each boot.
